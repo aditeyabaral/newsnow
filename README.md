@@ -9,8 +9,12 @@ NewsNow was a project built as a part of our Introduction to Computing using Pyt
 
 # Dependables : 
 nltk
+
 sklearn
+
 gensim
+
 BeautifulSoup
+
 googlesearch
 
