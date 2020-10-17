@@ -1,0 +1,5 @@
+numpy==1.19.1
+nltk==3.5
+scikit-learn==0.23.2
+beautifulsoup4==4.9.3
+GoogleNews==1.4.1

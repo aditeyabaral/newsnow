@@ -7,14 +7,3 @@ NewsNow is an application that takes in a search query and provides you with a c
 
 NewsNow was a project built as a part of our Introduction to Computing using Python course (UE18CS101) at PES University. The project is complete and is a fully working and deployable product.
 
-# Dependables : 
-nltk
-
-sklearn
-
-gensim
-
-BeautifulSoup
-
-googlesearch
-
