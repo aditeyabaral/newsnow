@@ -13,16 +13,11 @@ from GoogleNews import GoogleNews
 
 stopwords = stopwords.words("english")
 stemmer = SnowballStemmer("english")
-#noise_characters = string.punctuation + string.whitespace
-#allowed_characters = string.ascii_letters + string.digits
 vectorizer = TfidfVectorizer(
     stop_words="english",
     decode_error="ignore",
-    # strip_accents="unicode",
     lowercase=True,
-    ngram_range=(1, 3),
-    use_idf=True,
-    smooth_idf=True
+    # ngram_range=(1, 3)
 )
 
 
@@ -41,18 +36,18 @@ def getDocuments(urls):
     for url in urls:
         response = requests.get(url)
         soup = BeautifulSoup(response.text, "html.parser")
-        paragraph_text = soup.find_all('p')
-        content = [re.sub(r'<.+?>', r'', str(p)) for p in paragraph_text]
+        paragraph_texts = soup.find_all('p')
+        content = [re.sub(r'<.+?>', r'', str(p)) for p in paragraph_texts]
         content = [re.sub(
-            r"[\"\#\$\%\&\'\(\)\*\+\,\-\/\:\;\<\=\>\@\[\\\]\^\_\`\{\|\}\~]+", " ", document) for document in content]
+            r"[\"\#\%\&\(\)\*\+\/\:\<\=\>\@\[\\\]\^\_\`\{\|\}\~]+", " ", document) for document in content]
         content = [re.sub(r"[ \t\n\r\x0b\x0c]+", " ", document)
                    for document in content]
         if content:
-            articles.append(content)
+            articles.append(" ".join(content))
     return articles
 
 
-def merge(documents, threshold=0.7):
+def merge(documents, threshold=0.75):
     documents_sentences = list(map(sent_tokenize, documents))
     largest_document = max(documents_sentences, key=len)
     final_document = largest_document
@@ -63,9 +58,8 @@ def merge(documents, threshold=0.7):
         for document_line_position, document_line in enumerate(document):
             position = list()
             for final_document_line_position, final_document_line in enumerate(final_document):
-                document_line_vector = vectorizer.transform(document_line)
-                final_document_line_vector = vectorizer.transform(
-                    final_document_line)
+                document_line_vector, final_document_line_vector = vectorizer.transform(
+                    [document_line, final_document_line]).toarray()
                 similarity = cosine_similarity(
                     document_line_vector, final_document_line_vector)
                 position.append((final_document_line_position, similarity))
@@ -77,10 +71,10 @@ def merge(documents, threshold=0.7):
 
 
 def summarize(corpus, num_sentences=15):
-    sentence_list = nltk.sent_tokenize(corpus)
+    sentence_list = sent_tokenize(corpus)
     formatted_article_text = corpus
     word_frequencies = dict()
-    for word in nltk.word_tokenize(formatted_article_text):
+    for word in word_tokenize(formatted_article_text):
         if word not in stopwords:
             if word not in word_frequencies.keys():
                 word_frequencies[word] = 1
@@ -93,14 +87,16 @@ def summarize(corpus, num_sentences=15):
 
     sentence_scores = dict()
     for sent in sentence_list:
-        for word in nltk.word_tokenize(sent.lower()):
+        words = word_tokenize(sent.lower())
+        count_words = len(words)
+        for word in words:
             if word in word_frequencies.keys():
-                if len(sent.split(" ")) < 50:
+                if count_words < 50:
                     if sent not in sentence_scores.keys():
                         sentence_scores[sent] = word_frequencies[word]
                     else:
                         sentence_scores[sent] += word_frequencies[word]
     summary_sentences = heapq.nlargest(
-        N, sentence_scores, key=sentence_scores.get)
+        num_sentences, sentence_scores, key=sentence_scores.get)
     summary = " ".join(summary_sentences)
     return summary
