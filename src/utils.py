@@ -9,7 +9,8 @@ from nltk.corpus import stopwords
 from sklearn.feature_extraction.text import TfidfVectorizer
 from bs4 import BeautifulSoup
 from GoogleNews import GoogleNews
-
+import warnings
+warnings.filterwarnings("ignore")
 
 stopwords = stopwords.words("english")
 stemmer = SnowballStemmer("english")
