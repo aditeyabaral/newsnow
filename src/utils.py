@@ -4,21 +4,17 @@ import heapq
 import requests
 import numpy as np
 from nltk.tokenize import word_tokenize, sent_tokenize
-from nltk.stem.snowball import SnowballStemmer
 from nltk.corpus import stopwords
+
+import gensim.downloader as api
 from gensim.summarization import summarize as gensim_summarize
-from sklearn.feature_extraction.text import TfidfVectorizer
+
 from bs4 import BeautifulSoup
 from GoogleNews import GoogleNews
 
 stopwords = stopwords.words("english")
-stemmer = SnowballStemmer("english")
-vectorizer = TfidfVectorizer(
-    stop_words="english",
-    decode_error="ignore",
-    lowercase=True,
-    # ngram_range=(1, 3)
-)
+# See available gensim word2vec models here: https://github.com/RaRe-Technologies/gensim-data#models
+w2v_model = api.load("word2vec-google-news-300")
 
 
 def cosine_similarity(A, B):
@@ -28,7 +24,7 @@ def cosine_similarity(A, B):
 def getLinks(query, num_links=5):
     googlenews = GoogleNews(lang="en")
     googlenews.search(query)
-    return googlenews.get__links()[:num_links]
+    return googlenews.get_links()[:num_links]
 
 
 def getDocuments(urls):
@@ -47,19 +43,27 @@ def getDocuments(urls):
     return articles
 
 
-def merge(documents, threshold=0.75):
+def merge(documents, threshold=0.85):
+
+    def get_custom_wv(word):
+        try:
+            return w2v_model.get_vector(word)
+        except:
+            return np.zeros(w2v_model.vector_size)
+
     documents_sentences = list(map(sent_tokenize, documents))
     largest_document = max(documents_sentences, key=len)
     final_document = largest_document
-    vectorizer.fit(largest_document)
     for document in documents_sentences:
         if document == largest_document:
             continue
         for document_line_position, document_line in enumerate(document):
             position = list()
             for final_document_line_position, final_document_line in enumerate(final_document):
-                document_line_vector, final_document_line_vector = vectorizer.transform(
-                    [document_line, final_document_line]).toarray()
+                document_line_vector = np.mean(
+                    [get_custom_wv(word) for word in document_line.split()], axis=0)
+                final_document_line_vector = np.mean(
+                    [get_custom_wv(word) for word in final_document_line.split()], axis=0)
                 similarity = cosine_similarity(
                     document_line_vector, final_document_line_vector)
                 position.append((final_document_line_position, similarity))
