@@ -28,7 +28,7 @@ def cosine_similarity(A, B):
 def getLinks(query, num_links=5):
     googlenews = GoogleNews(lang="en")
     googlenews.search(query)
-    return googlenews.get__links()[:num_links]
+    return googlenews.get_links()[:num_links]
 
 
 def getDocuments(urls):
