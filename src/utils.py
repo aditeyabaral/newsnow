@@ -1,5 +1,4 @@
 import re
-import string
 import heapq
 import requests
 import numpy as np
@@ -13,9 +12,27 @@ from bs4 import BeautifulSoup
 from GoogleNews import GoogleNews
 
 stopwords = stopwords.words("english")
-# See available gensim word2vec models here: https://github.com/RaRe-Technologies/gensim-data#models
-w2v_model = api.load("word2vec-google-news-300")
 
+
+def load_embedding_model():
+    loading = True
+    tries = 0
+    print("Loading pre-trained embedding model...")
+
+    while loading:
+
+            try:
+                tries = tries + 1
+                w2v_model = api.load("word2vec-google-news-300")
+                loading = False
+                print("Loading complete.")
+            except Exception as ConnectionResetError:
+                if tries <= 5:
+                    print('\nFailed:', ConnectionResetError)
+                    print('\nTrying again...\n')
+                else:
+                    print('\nExecution terminated with error:', ConnectionResetError)
+    return w2v_model
 
 def cosine_similarity(A, B):
     return np.dot(A, B)/(np.linalg.norm(A) * np.linalg.norm(B))
@@ -43,8 +60,8 @@ def getDocuments(urls):
     return articles
 
 
-def merge(documents, threshold=0.85):
-
+def merge(documents, w2v_model):
+    threshold = 0.85
     def get_custom_wv(word):
         try:
             return w2v_model.get_vector(word)
