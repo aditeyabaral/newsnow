@@ -2,7 +2,7 @@ import utils
 
 print("Welcome to NewsNow!")
 choice = 'y'
-w2v_model = utils.load_embedding_model()
+w2v_model = utils.loadEmbeddingModel()
 
 while choice.lower() == 'y':
     query = input("Enter query to search: ").lower()
