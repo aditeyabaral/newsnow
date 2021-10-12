@@ -1,5 +1,4 @@
 import re
-import string
 import heapq
 import requests
 import numpy as np
@@ -13,12 +12,30 @@ from bs4 import BeautifulSoup
 from GoogleNews import GoogleNews
 
 stopwords = stopwords.words("english")
-# See available gensim word2vec models here: https://github.com/RaRe-Technologies/gensim-data#models
-w2v_model = api.load("word2vec-google-news-300")
 
 
-def cosine_similarity(A, B):
-    return np.dot(A, B)/(np.linalg.norm(A) * np.linalg.norm(B))
+def loadEmbeddingModel():
+    loading = True
+    tries = 0
+    print("Loading pre-trained embedding model...")
+
+    while loading:
+        try:
+            tries = tries + 1
+            w2v_model = api.load("word2vec-google-news-300")
+            loading = False
+            print("Loading complete.")
+        except Exception as ConnectionResetError:
+            if tries <= 5:
+                print('\nFailed:', ConnectionResetError)
+                print('\nTrying again...\n')
+            else:
+                print('\nExecution terminated with error:', ConnectionResetError)
+    return w2v_model
+
+
+def cosineSimilarity(A, B):
+    return np.dot(A, B) / (np.linalg.norm(A) * np.linalg.norm(B))
 
 
 def getLinks(query, num_links=5):
@@ -43,7 +60,7 @@ def getDocuments(urls):
     return articles
 
 
-def merge(documents, threshold=0.85):
+def merge(documents, w2v_model, threshold = 0.85):
 
     def get_custom_wv(word):
         try:
@@ -64,7 +81,7 @@ def merge(documents, threshold=0.85):
                     [get_custom_wv(word) for word in document_line.split()], axis=0)
                 final_document_line_vector = np.mean(
                     [get_custom_wv(word) for word in final_document_line.split()], axis=0)
-                similarity = cosine_similarity(
+                similarity = cosineSimilarity(
                     document_line_vector, final_document_line_vector)
                 position.append((final_document_line_position, similarity))
             position.sort(reverse=True, key=lambda x: x[1])
@@ -88,7 +105,7 @@ def summarize(corpus, mode='rank', ratio=0.5, num_sentences=15):
         maximum_frequncy = max(word_frequencies.values())
 
         for word in word_frequencies.keys():
-            word_frequencies[word] = (word_frequencies[word]/maximum_frequncy)
+            word_frequencies[word] = (word_frequencies[word] / maximum_frequncy)
 
         sentence_scores = dict()
         for sent in sentence_list:
